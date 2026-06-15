@@ -1,0 +1,16 @@
+.git
+.vs
+.vscode
+**/bin
+**/obj
+web/node_modules
+web/dist
+web/.tmp
+tests
+AGENTS.md
+CODEX-NOTES.md
+CODEX-TASKS.md
+saas-billing-demo-repo-plan.md
+.env
+.env.*
+!.env.sample
