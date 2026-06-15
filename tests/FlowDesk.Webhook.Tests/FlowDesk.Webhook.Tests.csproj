@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FlowDesk.Api\FlowDesk.Api.csproj" />
+    <ProjectReference Include="..\..\src\FlowDesk.Application\FlowDesk.Application.csproj" />
+    <ProjectReference Include="..\..\src\FlowDesk.Infrastructure\FlowDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\FlowDesk.Domain\FlowDesk.Domain.csproj" />
+    <ProjectReference Include="..\..\src\FlowDesk.Contracts\FlowDesk.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FlowDesk.Api/FlowDesk.Api.csproj" />
+    <Project Path="src/FlowDesk.Application/FlowDesk.Application.csproj" />
+    <Project Path="src/FlowDesk.Contracts/FlowDesk.Contracts.csproj" />
+    <Project Path="src/FlowDesk.Domain/FlowDesk.Domain.csproj" />
+    <Project Path="src/FlowDesk.Infrastructure/FlowDesk.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FlowDesk.Api.Tests/FlowDesk.Api.Tests.csproj" />
+    <Project Path="tests/FlowDesk.Webhook.Tests/FlowDesk.Webhook.Tests.csproj" />
+  </Folder>
+</Solution>

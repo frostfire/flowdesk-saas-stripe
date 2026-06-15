@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+[Tt]est[Rr]esults/
+
+# Node / frontend
+node_modules/
+dist/
+web/node_modules/
+web/dist/
+
+# Environment & secrets (template only)
+.env
+.env.*
+!.env.sample
+
+# Editor / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+*.log
