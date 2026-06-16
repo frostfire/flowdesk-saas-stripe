@@ -13,17 +13,23 @@ public sealed class HttpCaseFlowClient : ICaseFlowClient
         _httpClient = httpClient;
     }
 
-    public async Task<IReadOnlyList<CaseSummaryResponse>> ListCasesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CaseSummaryResponse>> ListCasesAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
         return await _httpClient.GetFromJsonAsync<CaseSummaryResponse[]>("/cases", cancellationToken) ?? [];
     }
 
-    public Task<CaseDetailResponse?> GetCaseAsync(string id, CancellationToken cancellationToken = default)
+    public Task<CaseDetailResponse?> GetCaseAsync(
+        string userId,
+        string id,
+        CancellationToken cancellationToken = default)
     {
         return _httpClient.GetFromJsonAsync<CaseDetailResponse>($"/cases/{Uri.EscapeDataString(id)}", cancellationToken);
     }
 
     public async Task<CaseDetailResponse> CreateCaseAsync(
+        string userId,
         CreateCaseRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -34,12 +40,47 @@ public sealed class HttpCaseFlowClient : ICaseFlowClient
             ?? throw new InvalidOperationException("CaseFlow create case response was empty.");
     }
 
-    public Task<CaseDetailResponse?> ApproveCaseAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<CaseDetailResponse?> UpdateCaseAsync(
+        string userId,
+        string id,
+        UpdateCaseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"/cases/{Uri.EscapeDataString(id)}", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<CaseDetailResponse>(cancellationToken);
+    }
+
+    public async Task<bool> DeleteCaseAsync(string userId, string id, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"/cases/{Uri.EscapeDataString(id)}", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    public Task<CaseDetailResponse?> ApproveCaseAsync(
+        string userId,
+        string id,
+        CancellationToken cancellationToken = default)
     {
         return PostCaseActionAsync(id, "approve", cancellationToken);
     }
 
-    public Task<CaseDetailResponse?> RejectCaseAsync(string id, CancellationToken cancellationToken = default)
+    public Task<CaseDetailResponse?> RejectCaseAsync(
+        string userId,
+        string id,
+        CancellationToken cancellationToken = default)
     {
         return PostCaseActionAsync(id, "reject", cancellationToken);
     }

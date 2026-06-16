@@ -7,3 +7,13 @@ export type CaseSummary = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type CaseDetail = CaseSummary & {
+  description: string;
+};
+
+export type CaseMutationValues = {
+  title: string;
+  description: string;
+  customerName: string;
+};

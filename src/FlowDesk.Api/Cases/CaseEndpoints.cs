@@ -12,13 +12,15 @@ public static class CaseEndpoints
     {
         var group = endpoints.MapGroup("/cases").RequireAuthorization();
 
-        group.MapGet("/", async (ICaseFlowClient caseFlow, CancellationToken cancellationToken) =>
+        group.MapGet("/", async (ClaimsPrincipal user, ICaseFlowClient caseFlow, CancellationToken cancellationToken) =>
         {
-            var cases = await caseFlow.ListCasesAsync(cancellationToken);
+            var cases = await caseFlow.ListCasesAsync(user.GetUserId(), cancellationToken);
             return Results.Ok(cases);
         });
         group.MapGet("/{id}", GetCaseAsync);
         group.MapPost("/", CreateCaseAsync);
+        group.MapPut("/{id}", UpdateCaseAsync);
+        group.MapDelete("/{id}", DeleteCaseAsync);
         group.MapPost("/{id}/approve", ApproveCaseAsync);
         group.MapPost("/{id}/reject", RejectCaseAsync);
 
@@ -27,10 +29,11 @@ public static class CaseEndpoints
 
     private static async Task<IResult> GetCaseAsync(
         string id,
+        ClaimsPrincipal user,
         ICaseFlowClient caseFlow,
         CancellationToken cancellationToken)
     {
-        var result = await caseFlow.GetCaseAsync(id, cancellationToken);
+        var result = await caseFlow.GetCaseAsync(user.GetUserId(), id, cancellationToken);
         return result is null ? Results.NotFound() : Results.Ok(result);
     }
 
@@ -46,8 +49,42 @@ public static class CaseEndpoints
             return Results.Forbid();
         }
 
-        var result = await caseFlow.CreateCaseAsync(request, cancellationToken);
+        var result = await caseFlow.CreateCaseAsync(user.GetUserId(), request, cancellationToken);
         return Results.Created($"/cases/{result.Id}", result);
+    }
+
+    private static async Task<IResult> UpdateCaseAsync(
+        string id,
+        UpdateCaseRequest request,
+        ClaimsPrincipal user,
+        ICurrentEntitlementService entitlements,
+        ICaseFlowClient caseFlow,
+        CancellationToken cancellationToken)
+    {
+        if (!await CanCreateCasesAsync(user, entitlements, cancellationToken))
+        {
+            return Results.Forbid();
+        }
+
+        var result = await caseFlow.UpdateCaseAsync(user.GetUserId(), id, request, cancellationToken);
+        return result is null ? Results.NotFound() : Results.Ok(result);
+    }
+
+    private static async Task<IResult> DeleteCaseAsync(
+        string id,
+        ClaimsPrincipal user,
+        ICurrentEntitlementService entitlements,
+        ICaseFlowClient caseFlow,
+        CancellationToken cancellationToken)
+    {
+        if (!await CanCreateCasesAsync(user, entitlements, cancellationToken))
+        {
+            return Results.Forbid();
+        }
+
+        return await caseFlow.DeleteCaseAsync(user.GetUserId(), id, cancellationToken)
+            ? Results.NoContent()
+            : Results.NotFound();
     }
 
     private static async Task<IResult> ApproveCaseAsync(
@@ -62,7 +99,7 @@ public static class CaseEndpoints
             return Results.Forbid();
         }
 
-        var result = await caseFlow.ApproveCaseAsync(id, cancellationToken);
+        var result = await caseFlow.ApproveCaseAsync(user.GetUserId(), id, cancellationToken);
         return result is null ? Results.NotFound() : Results.Ok(result);
     }
 
@@ -78,7 +115,7 @@ public static class CaseEndpoints
             return Results.Forbid();
         }
 
-        var result = await caseFlow.RejectCaseAsync(id, cancellationToken);
+        var result = await caseFlow.RejectCaseAsync(user.GetUserId(), id, cancellationToken);
         return result is null ? Results.NotFound() : Results.Ok(result);
     }
 

@@ -118,7 +118,7 @@ public sealed class BillingEndpointTests
 
         Assert.Equal(HttpStatusCode.Created, proCreate.StatusCode);
         Assert.NotNull(proAnalytics);
-        Assert.Equal(3, proAnalytics.TotalCases);
+        Assert.Equal(4, proAnalytics.TotalCases);
     }
 
     [Fact]

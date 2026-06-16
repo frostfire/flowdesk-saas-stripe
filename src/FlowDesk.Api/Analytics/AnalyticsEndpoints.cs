@@ -28,7 +28,7 @@ public static class AnalyticsEndpoints
             return Results.Forbid();
         }
 
-        var cases = await caseFlow.ListCasesAsync(cancellationToken);
+        var cases = await caseFlow.ListCasesAsync(user.GetUserId(), cancellationToken);
         var summary = new AnalyticsSummaryResponse(
             cases.Count,
             cases.Count(item => IsStatus(item.Status, "Pending") || IsStatus(item.Status, "InReview")),
