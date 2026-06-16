@@ -19,6 +19,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
+    credentials: "include",
     headers,
   });
 
@@ -28,6 +29,10 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
 
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json() as Promise<T>;

@@ -23,6 +23,7 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
@@ -72,6 +73,14 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
             {errors.password ? (
               <span className="text-sm font-normal text-red-600">{errors.password.message}</span>
             ) : null}
+          </label>
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              className="h-4 w-4 rounded border-border text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              type="checkbox"
+              {...register("rememberMe")}
+            />
+            Remember Me
           </label>
           {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
           <Button type="submit" disabled={isSubmitting}>

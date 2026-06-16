@@ -30,16 +30,20 @@ builder.Services
         var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration is missing.");
 
-        options.TokenValidationParameters = new TokenValidationParameters
+        var jwtTokenService = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(jwtOptions));
+        options.TokenValidationParameters = jwtTokenService.CreateValidationParameters();
+        options.Events = new JwtBearerEvents
         {
-            ValidateIssuer = true,
-            ValidIssuer = jwtOptions.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtOptions.Audience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = JwtTokenService.CreateSigningKey(jwtOptions.SigningKey),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1),
+            OnTokenValidated = context =>
+            {
+                var tokenType = context.Principal?.FindFirst(JwtTokenService.TokenTypeClaim)?.Value;
+                if (tokenType != JwtTokenService.AccessTokenType)
+                {
+                    context.Fail("Invalid token type.");
+                }
+
+                return Task.CompletedTask;
+            },
         };
     });
 builder.Services.AddAuthorization();
@@ -50,7 +54,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(origins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 builder.Services.AddHealthChecks();

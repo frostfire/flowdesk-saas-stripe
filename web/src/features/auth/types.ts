@@ -12,4 +12,5 @@ export type AuthResponse = {
 export type AuthFormValues = {
   email: string;
   password: string;
+  rememberMe: boolean;
 };
