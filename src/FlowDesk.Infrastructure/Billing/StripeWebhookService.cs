@@ -46,7 +46,15 @@ public sealed class StripeWebhookService : IStripeWebhookService
         Event stripeEvent;
         try
         {
-            stripeEvent = EventUtility.ConstructEvent(payload, signature, _options.StripeWebhookSecret);
+            // Verify the signature, but don't reject on API-version mismatch: the account's
+            // webhook API version can differ from the SDK's pinned version, and this handler
+            // only uses the event id/type and re-fetches the live subscription, so the event
+            // payload's shape/version is irrelevant.
+            stripeEvent = EventUtility.ConstructEvent(
+                payload,
+                signature,
+                _options.StripeWebhookSecret,
+                throwOnApiVersionMismatch: false);
         }
         catch (StripeException)
         {
