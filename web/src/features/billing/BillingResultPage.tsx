@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 
+type BillingResultState = "success" | "cancelled" | "syncing";
+
 export function BillingResultPage({ status }: { status: "success" | "cancel" }) {
-  const isSuccess = status === "success";
+  const state: BillingResultState = status === "success" ? "syncing" : "cancelled";
+  const isSuccess = state === "syncing";
 
   return (
     <section className="mx-auto max-w-xl">

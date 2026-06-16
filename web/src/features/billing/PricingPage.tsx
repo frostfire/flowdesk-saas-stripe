@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createCheckoutSession, createPortalSession, getCurrentEntitlements } from "./billingApi";
 import { DunningBanner } from "./DunningBanner";
@@ -6,6 +7,7 @@ import type { PlanCode } from "./types";
 
 type PricingPageProps = {
   token: string;
+  redirectTo?(url: string): void;
   onUnauthorized(): void;
 };
 
@@ -33,23 +35,46 @@ const plans: Plan[] = [
   },
 ];
 
-export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
+type BillingUiState =
+  | { status: "idle" }
+  | { status: "redirecting"; target: "checkout" | "portal"; plan?: Exclude<PlanCode, "Free"> }
+  | { status: "success" }
+  | { status: "cancelled" }
+  | { status: "syncing" };
+
+export function PricingPage({ token, redirectTo = (url) => window.location.assign(url), onUnauthorized }: PricingPageProps) {
+  const [billingState, setBillingState] = useState<BillingUiState>({ status: "idle" });
   const entitlements = useQuery({
     queryKey: ["entitlements"],
     queryFn: () => getCurrentEntitlements(token, onUnauthorized),
   });
   const checkout = useMutation({
     mutationFn: (plan: Exclude<PlanCode, "Free">) => createCheckoutSession(token, plan, onUnauthorized),
+    onMutate: (plan) => {
+      setBillingState({ status: "redirecting", target: "checkout", plan });
+    },
     onSuccess: (session) => {
-      window.location.assign(session.url);
+      setBillingState({ status: "syncing" });
+      redirectTo(session.url);
+    },
+    onError: () => {
+      setBillingState({ status: "idle" });
     },
   });
   const portal = useMutation({
     mutationFn: () => createPortalSession(token, onUnauthorized),
+    onMutate: () => {
+      setBillingState({ status: "redirecting", target: "portal" });
+    },
     onSuccess: (session) => {
-      window.location.assign(session.url);
+      setBillingState({ status: "syncing" });
+      redirectTo(session.url);
+    },
+    onError: () => {
+      setBillingState({ status: "idle" });
     },
   });
+  const isPortalRedirecting = billingState.status === "redirecting" && billingState.target === "portal";
 
   return (
     <section className="grid gap-6">
@@ -59,8 +84,8 @@ export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
           <p className="text-sm font-medium text-primary">Billing</p>
           <h1 className="mt-2 text-3xl font-semibold">Plans</h1>
         </div>
-        <Button variant="outline" disabled={portal.isPending} onClick={() => portal.mutate()}>
-          {portal.isPending ? "Redirecting" : "Manage billing"}
+        <Button variant="outline" disabled={isPortalRedirecting} onClick={() => portal.mutate()}>
+          {isPortalRedirecting ? "Redirecting" : "Manage billing"}
         </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -69,7 +94,11 @@ export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
             key={plan.code}
             plan={plan}
             currentPlan={entitlements.data?.plan}
-            isRedirecting={checkout.isPending && checkout.variables === plan.code}
+            isRedirecting={
+              billingState.status === "redirecting" &&
+              billingState.target === "checkout" &&
+              billingState.plan === plan.code
+            }
             onUpgrade={() => {
               if (plan.code !== "Free") {
                 checkout.mutate(plan.code);
@@ -86,6 +115,11 @@ export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
       {portal.isError ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
           Billing portal is unavailable.
+        </div>
+      ) : null}
+      {billingState.status === "syncing" ? (
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+          Billing is syncing.
         </div>
       ) : null}
       <p className="text-sm text-slate-600">Test checkout details pending.</p>
@@ -121,7 +155,12 @@ function PlanCard({
           <li key={feature}>{feature}</li>
         ))}
       </ul>
-      <Button className="mt-6 w-full" disabled={isFree || isCurrent || isRedirecting} onClick={onUpgrade}>
+      <Button
+        aria-label={isFree ? "Free plan included" : `Upgrade to ${plan.code}`}
+        className="mt-6 w-full"
+        disabled={isFree || isCurrent || isRedirecting}
+        onClick={onUpgrade}
+      >
         {isRedirecting ? "Redirecting" : isFree ? "Included" : "Upgrade"}
       </Button>
     </article>

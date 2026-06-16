@@ -6,4 +6,7 @@ TODO(claude)
 - decision
 - local cache role
 - reconciliation behavior
+- gateway subscription snapshot
+- out-of-order event behavior
+- payment failure behavior
 - tradeoffs

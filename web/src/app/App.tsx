@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BriefcaseBusiness } from "lucide-react";
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/features/auth/AuthForm";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
@@ -20,6 +21,7 @@ function Shell() {
 
   return (
     <div className="min-h-screen">
+      <RouteFocusManager />
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 text-base font-semibold">
@@ -51,7 +53,7 @@ function Shell() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-10 outline-none">
         <Routes>
           <Route path="/" element={<Navigate to="/app" replace />} />
           <Route path="/login" element={<AuthPage mode="signin" />} />
@@ -68,6 +70,16 @@ function Shell() {
       </main>
     </div>
   );
+}
+
+function RouteFocusManager() {
+  const location = useLocation();
+
+  useEffect(() => {
+    document.getElementById("main-content")?.focus();
+  }, [location.pathname]);
+
+  return null;
 }
 
 function Dashboard() {

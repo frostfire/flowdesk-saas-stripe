@@ -6,4 +6,7 @@ TODO(claude)
 - decision
 - PCI boundary
 - implementation notes
+- checkout session contract
+- success and cancel URLs
+- test-mode usage
 - tradeoffs

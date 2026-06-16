@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using FlowDesk.Application.Billing;
 using FlowDesk.Contracts.Auth;
+using FlowDesk.Contracts.Cases;
 using FlowDesk.Contracts.Entitlements;
 using FlowDesk.Domain.Billing;
 using FlowDesk.Infrastructure.Persistence;
@@ -92,7 +93,7 @@ public sealed class StripeWebhookEndpointTests
     }
 
     [Fact]
-    public async Task StripeWebhook_ReconcilesAgainstCurrentSubscriptionState()
+    public async Task StripeWebhook_PaymentFailedMarksPastDueAndRevokesEntitlements()
     {
         var fakeGateway = new FakeBillingGateway();
         using var factory = CreateFactory(fakeGateway);
@@ -110,9 +111,16 @@ public sealed class StripeWebhookEndpointTests
 
         failed.EnsureSuccessStatusCode();
         var entitlements = await GetEntitlementsAsync(client, auth);
+        var create = await client.PostAsJsonAsync(
+            "/cases",
+            new CreateCaseRequest("Payment failed review", "Payment failed.", "Northwind Components"));
+        var analytics = await client.GetAsync("/analytics/summary");
+
         Assert.Equal("PastDue", entitlements.Status);
         Assert.False(entitlements.Entitlements.CanCreateCases);
         Assert.False(entitlements.Entitlements.CanViewAnalytics);
+        Assert.Equal(HttpStatusCode.Forbidden, create.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, analytics.StatusCode);
     }
 
     [Fact]
