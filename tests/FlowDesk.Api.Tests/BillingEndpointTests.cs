@@ -74,6 +74,25 @@ public sealed class BillingEndpointTests
     }
 
     [Fact]
+    public async Task PortalSession_UsesBillingGateway()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        await SeedBillingCustomerAsync(factory, auth.User.Id, "cus_portal");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var response = await client.PostAsJsonAsync(
+            "/billing/portal-session",
+            new CreatePortalSessionRequest("http://localhost/app"));
+
+        response.EnsureSuccessStatusCode();
+        var session = await response.Content.ReadFromJsonAsync<BillingSessionResponse>();
+
+        Assert.Equal("https://billing.test/portal", session?.Url);
+    }
+
+    [Fact]
     public async Task GatedEndpoints_ReturnForbiddenForFree_AndSuccessForPro()
     {
         using var factory = CreateFactory();
@@ -99,6 +118,28 @@ public sealed class BillingEndpointTests
         Assert.Equal(HttpStatusCode.Created, proCreate.StatusCode);
         Assert.NotNull(proAnalytics);
         Assert.Equal(3, proAnalytics.TotalCases);
+    }
+
+    [Fact]
+    public async Task GatedEndpoints_ReturnForbiddenForPastDueSubscription()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        await SeedSubscriptionAsync(factory, auth.User.Id, PlanCode.Team, SubscriptionStatus.PastDue);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var create = await client.PostAsJsonAsync(
+            "/cases",
+            new CreateCaseRequest("Past due review", "Payment failed.", "Northwind Components"));
+        var analytics = await client.GetAsync("/analytics/summary");
+        var entitlements = await client.GetFromJsonAsync<CurrentEntitlementsResponse>("/entitlements/me");
+
+        Assert.Equal(HttpStatusCode.Forbidden, create.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, analytics.StatusCode);
+        Assert.Equal("PastDue", entitlements?.Status);
+        Assert.False(entitlements?.Entitlements.CanCreateCases);
+        Assert.False(entitlements?.Entitlements.CanViewAnalytics);
     }
 
     private static async Task<AuthResponse> RegisterAsync(HttpClient client)
@@ -150,6 +191,27 @@ public sealed class BillingEndpointTests
         await dbContext.SaveChangesAsync();
     }
 
+    private static async Task SeedBillingCustomerAsync(
+        WebApplicationFactory<Program> factory,
+        string userId,
+        string customerId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlowDeskDbContext>();
+        var now = DateTimeOffset.UtcNow;
+
+        dbContext.BillingCustomers.Add(new BillingCustomer
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            StripeCustomerId = customerId,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
+        await dbContext.SaveChangesAsync();
+    }
+
     private static WebApplicationFactory<Program> CreateFactory()
     {
         var databaseName = $"flowdesk-billing-tests-{Guid.NewGuid():N}";
@@ -190,6 +252,14 @@ public sealed class BillingEndpointTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult<BillingSubscriptionSnapshot?>(null);
+        }
+
+        public Task<string> CreatePortalSessionAsync(
+            string customerId,
+            string returnUrl,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult("https://billing.test/portal");
         }
     }
 }

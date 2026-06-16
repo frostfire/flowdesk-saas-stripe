@@ -31,6 +31,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<FlowDeskDbContext>();
 
         services.AddCaseFlowClient(configuration);
+        services.AddScoped<IBillingCustomerStore, BillingCustomerStore>();
         services.AddScoped<ICurrentEntitlementService, CurrentEntitlementService>();
         services.AddScoped<IStripeWebhookService, StripeWebhookService>();
         services.AddSingleton<IBillingGateway, StripeBillingGateway>();

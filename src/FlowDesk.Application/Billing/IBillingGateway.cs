@@ -12,6 +12,11 @@ public interface IBillingGateway
         string cancelUrl,
         CancellationToken cancellationToken = default);
 
+    Task<string> CreatePortalSessionAsync(
+        string customerId,
+        string returnUrl,
+        CancellationToken cancellationToken = default);
+
     Task<BillingSubscriptionSnapshot?> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default);

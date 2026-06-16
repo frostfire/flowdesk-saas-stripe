@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import type { CheckoutSession, CurrentEntitlements, PlanCode } from "./types";
+import type { BillingSession, CurrentEntitlements, PlanCode } from "./types";
 
 export function getCurrentEntitlements(token: string, onUnauthorized: () => void) {
   return apiRequest<CurrentEntitlements>("/entitlements/me", {
@@ -13,7 +13,7 @@ export function createCheckoutSession(
   plan: Exclude<PlanCode, "Free">,
   onUnauthorized: () => void,
 ) {
-  return apiRequest<CheckoutSession>("/billing/checkout-session", {
+  return apiRequest<BillingSession>("/billing/checkout-session", {
     method: "POST",
     token,
     onUnauthorized,
@@ -21,6 +21,17 @@ export function createCheckoutSession(
       plan,
       successUrl: `${window.location.origin}/billing/success`,
       cancelUrl: `${window.location.origin}/billing/cancel`,
+    }),
+  });
+}
+
+export function createPortalSession(token: string, onUnauthorized: () => void) {
+  return apiRequest<BillingSession>("/billing/portal-session", {
+    method: "POST",
+    token,
+    onUnauthorized,
+    body: JSON.stringify({
+      returnUrl: `${window.location.origin}/pricing`,
     }),
   });
 }

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { AnalyticsPage } from "@/features/billing/AnalyticsPage";
 import { BillingResultPage } from "@/features/billing/BillingResultPage";
+import { DunningBanner } from "@/features/billing/DunningBanner";
 import { EntitlementSummary } from "@/features/billing/EntitlementSummary";
 import { GatedActions } from "@/features/billing/GatedActions";
 import { PricingPage } from "@/features/billing/PricingPage";
@@ -83,6 +84,7 @@ function Dashboard() {
       </div>
       {token ? (
         <>
+          <DunningBanner token={token} onUnauthorized={signOut} />
           <EntitlementSummary token={token} onUnauthorized={signOut} />
           <GatedActions token={token} onUnauthorized={signOut} />
           <CaseList token={token} onUnauthorized={signOut} />

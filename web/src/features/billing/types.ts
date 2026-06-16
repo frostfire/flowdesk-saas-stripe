@@ -13,6 +13,6 @@ export type CurrentEntitlements = {
   entitlements: EntitlementSet;
 };
 
-export type CheckoutSession = {
+export type BillingSession = {
   url: string;
 };

@@ -102,6 +102,28 @@ public sealed class StripeBillingGateway : IBillingGateway
             subscription.CancelAtPeriodEnd);
     }
 
+    public async Task<string> CreatePortalSessionAsync(
+        string customerId,
+        string returnUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_options.StripeSecretKey))
+        {
+            throw new InvalidOperationException("Stripe secret key is not configured.");
+        }
+
+        var service = new Stripe.BillingPortal.SessionService(new StripeClient(_options.StripeSecretKey));
+        var session = await service.CreateAsync(
+            new Stripe.BillingPortal.SessionCreateOptions
+            {
+                Customer = customerId,
+                ReturnUrl = returnUrl,
+            },
+            cancellationToken: cancellationToken);
+
+        return session.Url ?? throw new InvalidOperationException("Stripe portal session URL was empty.");
+    }
+
     private string PriceIdFor(PlanCode plan)
     {
         var priceId = plan switch

@@ -14,6 +14,7 @@ public static class BillingEndpoints
 
         var group = endpoints.MapGroup("/billing").RequireAuthorization();
         group.MapPost("/checkout-session", CreateCheckoutSessionAsync);
+        group.MapPost("/portal-session", CreatePortalSessionAsync);
 
         return group;
     }
@@ -47,6 +48,29 @@ public static class BillingEndpoints
             plan,
             request.SuccessUrl,
             request.CancelUrl,
+            cancellationToken);
+
+        return Results.Ok(new BillingSessionResponse(url));
+    }
+
+    private static async Task<IResult> CreatePortalSessionAsync(
+        CreatePortalSessionRequest request,
+        ClaimsPrincipal user,
+        IBillingCustomerStore customerStore,
+        IBillingGateway billingGateway,
+        CancellationToken cancellationToken)
+    {
+        var customerId = await customerStore.GetStripeCustomerIdForUserAsync(user.GetUserId(), cancellationToken);
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            return Results.Problem(
+                title: "Billing customer not found.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var url = await billingGateway.CreatePortalSessionAsync(
+            customerId,
+            request.ReturnUrl,
             cancellationToken);
 
         return Results.Ok(new BillingSessionResponse(url));

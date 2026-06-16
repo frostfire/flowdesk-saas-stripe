@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { createCheckoutSession, getCurrentEntitlements } from "./billingApi";
+import { createCheckoutSession, createPortalSession, getCurrentEntitlements } from "./billingApi";
+import { DunningBanner } from "./DunningBanner";
 import type { PlanCode } from "./types";
 
 type PricingPageProps = {
@@ -43,12 +44,24 @@ export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
       window.location.assign(session.url);
     },
   });
+  const portal = useMutation({
+    mutationFn: () => createPortalSession(token, onUnauthorized),
+    onSuccess: (session) => {
+      window.location.assign(session.url);
+    },
+  });
 
   return (
     <section className="grid gap-6">
-      <div>
-        <p className="text-sm font-medium text-primary">Billing</p>
-        <h1 className="mt-2 text-3xl font-semibold">Plans</h1>
+      <DunningBanner token={token} onUnauthorized={onUnauthorized} />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-primary">Billing</p>
+          <h1 className="mt-2 text-3xl font-semibold">Plans</h1>
+        </div>
+        <Button variant="outline" disabled={portal.isPending} onClick={() => portal.mutate()}>
+          {portal.isPending ? "Redirecting" : "Manage billing"}
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {plans.map((plan) => (
@@ -68,6 +81,11 @@ export function PricingPage({ token, onUnauthorized }: PricingPageProps) {
       {checkout.isError ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
           Checkout is unavailable.
+        </div>
+      ) : null}
+      {portal.isError ? (
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          Billing portal is unavailable.
         </div>
       ) : null}
       <p className="text-sm text-slate-600">Test checkout details pending.</p>
