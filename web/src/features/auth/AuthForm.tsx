@@ -29,11 +29,16 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
   const title = mode === "signin" ? "Sign in" : "Create account";
   const alternate = mode === "signin" ? "/register" : "/login";
   const alternateText = mode === "signin" ? "Create account" : "Sign in";
+  const helpText =
+    mode === "signup"
+      ? "This is a sandbox running in Stripe test mode — no real data and no real charges. Sign up with any email (a real address isn't required); your password needs at least 8 characters including a lowercase letter and a number, for example flowdesk1."
+      : "Demo accounts are self-serve — there are no shared logins. If you don't have one yet, create an account below. It's a sandbox in Stripe test mode.";
 
   return (
     <section className="mx-auto max-w-md">
       <div className="rounded-md border border-border bg-white p-6">
         <h1 className="text-2xl font-semibold">{title}</h1>
+        <p className="mt-2 text-sm text-zinc-600">{helpText}</p>
         <form
           className="mt-6 grid gap-4"
           onSubmit={handleSubmit(async (values) => {
