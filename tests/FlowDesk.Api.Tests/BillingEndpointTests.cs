@@ -184,5 +184,12 @@ public sealed class BillingEndpointTests
         {
             return Task.FromResult("https://billing.test/checkout");
         }
+
+        public Task<BillingSubscriptionSnapshot?> GetSubscriptionAsync(
+            string subscriptionId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<BillingSubscriptionSnapshot?>(null);
+        }
     }
 }

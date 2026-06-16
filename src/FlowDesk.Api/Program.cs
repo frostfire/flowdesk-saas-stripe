@@ -2,6 +2,7 @@ using FlowDesk.Api.Analytics;
 using FlowDesk.Api.Auth;
 using FlowDesk.Api.Billing;
 using FlowDesk.Api.Cases;
+using FlowDesk.Api.Webhooks;
 using FlowDesk.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -73,6 +74,7 @@ app.MapAuthEndpoints();
 app.MapBillingEndpoints();
 app.MapCaseEndpoints();
 app.MapAnalyticsEndpoints();
+app.MapStripeWebhookEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/health"));
 
