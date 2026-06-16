@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/features/auth/AuthForm";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { AnalyticsPage } from "@/features/billing/AnalyticsPage";
+import { BillingResultPage } from "@/features/billing/BillingResultPage";
+import { EntitlementSummary } from "@/features/billing/EntitlementSummary";
+import { GatedActions } from "@/features/billing/GatedActions";
+import { PricingPage } from "@/features/billing/PricingPage";
 import { CaseList } from "@/features/cases/CaseList";
 
 const queryClient = new QueryClient();
@@ -23,6 +28,12 @@ function Shell() {
           <nav className="flex items-center gap-2">
             {token ? (
               <>
+                <Link
+                  to="/pricing"
+                  className="inline-flex h-10 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Plans
+                </Link>
                 <span className="hidden text-sm text-slate-600 sm:inline">{user?.email}</span>
                 <Button variant="outline" onClick={signOut}>
                   Sign out
@@ -46,6 +57,10 @@ function Shell() {
           <Route path="/register" element={<AuthPage mode="signup" />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/app" element={<Dashboard />} />
+            <Route path="/analytics" element={<AnalyticsRoute />} />
+            <Route path="/pricing" element={<PricingRoute />} />
+            <Route path="/billing/success" element={<BillingResultPage status="success" />} />
+            <Route path="/billing/cancel" element={<BillingResultPage status="cancel" />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -63,12 +78,30 @@ function Dashboard() {
         <p className="text-sm font-medium text-primary">Case workspace</p>
         <h1 className="mt-2 text-3xl font-semibold">Welcome, {user?.email}</h1>
         <p className="mt-3 max-w-2xl text-slate-600">
-          Review the current CaseFlow queue before billing gates and case actions are added.
+          Review the current CaseFlow queue and plan-gated workspace actions.
         </p>
       </div>
-      {token ? <CaseList token={token} onUnauthorized={signOut} /> : null}
+      {token ? (
+        <>
+          <EntitlementSummary token={token} onUnauthorized={signOut} />
+          <GatedActions token={token} onUnauthorized={signOut} />
+          <CaseList token={token} onUnauthorized={signOut} />
+        </>
+      ) : null}
     </section>
   );
+}
+
+function PricingRoute() {
+  const { signOut, token } = useAuth();
+
+  return token ? <PricingPage token={token} onUnauthorized={signOut} /> : null;
+}
+
+function AnalyticsRoute() {
+  const { signOut, token } = useAuth();
+
+  return token ? <AnalyticsPage token={token} onUnauthorized={signOut} /> : null;
 }
 
 function AuthPage({ mode }: { mode: "signin" | "signup" }) {
