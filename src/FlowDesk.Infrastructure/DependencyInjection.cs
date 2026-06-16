@@ -33,6 +33,8 @@ public static class DependencyInjection
         services.AddCaseFlowClient(configuration);
         services.AddScoped<IBillingCustomerStore, BillingCustomerStore>();
         services.AddScoped<ICurrentEntitlementService, CurrentEntitlementService>();
+        services.AddScoped<IBillingDiagnosticsService, BillingDiagnosticsService>();
+        services.AddScoped<IDemoResetService, DemoResetService>();
         services.AddScoped<IStripeWebhookService, StripeWebhookService>();
         services.AddSingleton<IBillingGateway, StripeBillingGateway>();
         services.Configure<BillingOptions>(options =>

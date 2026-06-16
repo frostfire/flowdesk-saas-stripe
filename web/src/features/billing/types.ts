@@ -16,3 +16,35 @@ export type CurrentEntitlements = {
 export type BillingSession = {
   url: string;
 };
+
+export type AdminSubscriptionState = {
+  plan: PlanCode;
+  status: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  updatedAt: string | null;
+};
+
+export type AdminStripeWebhookEvent = {
+  stripeEventId: string;
+  type: string;
+  receivedAt: string;
+  processedAt: string | null;
+  processingError: string | null;
+};
+
+export type AdminBillingDebug = {
+  subscription: AdminSubscriptionState;
+  webhookEvents: AdminStripeWebhookEvent[];
+};
+
+export type ResetDemoResult = {
+  canceledSubscriptions: number;
+  resetSubscriptions: number;
+  deletedBillingCustomers: number;
+  deletedWebhookEvents: number;
+  demoUserEmail: string;
+};

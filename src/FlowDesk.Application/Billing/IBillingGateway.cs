@@ -20,4 +20,8 @@ public interface IBillingGateway
     Task<BillingSubscriptionSnapshot?> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default);
+
+    Task CancelSubscriptionAsync(
+        string subscriptionId,
+        CancellationToken cancellationToken = default);
 }

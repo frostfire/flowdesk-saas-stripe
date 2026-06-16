@@ -122,7 +122,24 @@ export function PricingPage({ token, redirectTo = (url) => window.location.assig
           Billing is syncing.
         </div>
       ) : null}
-      <p className="text-sm text-slate-600">Test checkout details pending.</p>
+      <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <h2 className="font-semibold">Stripe test mode</h2>
+        <p className="mt-2">TODO(claude): hosted-demo test checkout note.</p>
+        <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div>
+            <dt className="font-medium">Success</dt>
+            <dd>4242 4242 4242 4242</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Decline</dt>
+            <dd>4000 0000 0000 0002</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Failed payment</dt>
+            <dd>4000 0000 0000 0341</dd>
+          </div>
+        </dl>
+      </section>
     </section>
   );
 }

@@ -124,6 +124,19 @@ public sealed class StripeBillingGateway : IBillingGateway
         return session.Url ?? throw new InvalidOperationException("Stripe portal session URL was empty.");
     }
 
+    public async Task CancelSubscriptionAsync(
+        string subscriptionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_options.StripeSecretKey))
+        {
+            throw new InvalidOperationException("Stripe secret key is not configured.");
+        }
+
+        var service = new SubscriptionService(new StripeClient(_options.StripeSecretKey));
+        await service.CancelAsync(subscriptionId, cancellationToken: cancellationToken);
+    }
+
     private string PriceIdFor(PlanCode plan)
     {
         var priceId = plan switch

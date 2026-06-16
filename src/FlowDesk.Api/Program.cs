@@ -1,3 +1,4 @@
+using FlowDesk.Api.Admin;
 using FlowDesk.Api.Analytics;
 using FlowDesk.Api.Auth;
 using FlowDesk.Api.Billing;
@@ -75,6 +76,7 @@ app.MapBillingEndpoints();
 app.MapCaseEndpoints();
 app.MapAnalyticsEndpoints();
 app.MapStripeWebhookEndpoints();
+app.MapAdminEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/health"));
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/features/auth/AuthForm";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { AdminDebugPage } from "@/features/billing/AdminDebugPage";
 import { AnalyticsPage } from "@/features/billing/AnalyticsPage";
 import { BillingResultPage } from "@/features/billing/BillingResultPage";
 import { DunningBanner } from "@/features/billing/DunningBanner";
@@ -37,6 +38,12 @@ function Shell() {
                 >
                   Plans
                 </Link>
+                <Link
+                  to="/admin"
+                  className="inline-flex h-10 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Admin
+                </Link>
                 <span className="hidden text-sm text-slate-600 sm:inline">{user?.email}</span>
                 <Button variant="outline" onClick={signOut}>
                   Sign out
@@ -60,6 +67,7 @@ function Shell() {
           <Route path="/register" element={<AuthPage mode="signup" />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/app" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminRoute />} />
             <Route path="/analytics" element={<AnalyticsRoute />} />
             <Route path="/pricing" element={<PricingRoute />} />
             <Route path="/billing/success" element={<BillingResultPage status="success" />} />
@@ -116,6 +124,12 @@ function AnalyticsRoute() {
   const { signOut, token } = useAuth();
 
   return token ? <AnalyticsPage token={token} onUnauthorized={signOut} /> : null;
+}
+
+function AdminRoute() {
+  const { signOut, token } = useAuth();
+
+  return token ? <AdminDebugPage token={token} onUnauthorized={signOut} /> : null;
 }
 
 function AuthPage({ mode }: { mode: "signin" | "signup" }) {

@@ -23,6 +23,12 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=flowdesk;Username=flowdesk;Password=flowdesk_dev_password
       Database__ApplyMigrationsOnStartup: "true"
+      CaseFlow__ClientMode: Fake
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-price_pro_placeholder}
+      STRIPE_PRICE_TEAM: ${STRIPE_PRICE_TEAM:-price_team_placeholder}
     ports:
       - "8080:8080"
     depends_on:

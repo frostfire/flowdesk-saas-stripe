@@ -352,5 +352,12 @@ public sealed class StripeWebhookEndpointTests
         {
             _throwOnceSubscriptions.Add(subscriptionId);
         }
+
+        public Task CancelSubscriptionAsync(
+            string subscriptionId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

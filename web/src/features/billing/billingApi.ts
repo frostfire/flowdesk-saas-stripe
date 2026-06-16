@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import type { BillingSession, CurrentEntitlements, PlanCode } from "./types";
+import type { AdminBillingDebug, BillingSession, CurrentEntitlements, PlanCode, ResetDemoResult } from "./types";
 
 export function getCurrentEntitlements(token: string, onUnauthorized: () => void) {
   return apiRequest<CurrentEntitlements>("/entitlements/me", {
@@ -33,5 +33,20 @@ export function createPortalSession(token: string, onUnauthorized: () => void) {
     body: JSON.stringify({
       returnUrl: `${window.location.origin}/pricing`,
     }),
+  });
+}
+
+export function getAdminBillingDebug(token: string, onUnauthorized: () => void) {
+  return apiRequest<AdminBillingDebug>("/admin/billing-debug", {
+    token,
+    onUnauthorized,
+  });
+}
+
+export function resetDemo(token: string, onUnauthorized: () => void) {
+  return apiRequest<ResetDemoResult>("/admin/reset-demo", {
+    method: "POST",
+    token,
+    onUnauthorized,
   });
 }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FlowDesk.Application.Billing;
+using FlowDesk.Contracts.Admin;
 using FlowDesk.Contracts.Analytics;
 using FlowDesk.Contracts.Auth;
 using FlowDesk.Contracts.Billing;
@@ -142,6 +143,53 @@ public sealed class BillingEndpointTests
         Assert.False(entitlements?.Entitlements.CanViewAnalytics);
     }
 
+    [Fact]
+    public async Task AdminBillingDebug_ReturnsWebhookEventsAndSubscriptionState()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        await SeedSubscriptionAsync(factory, auth.User.Id, PlanCode.Pro, SubscriptionStatus.Active);
+        await SeedWebhookEventAsync(factory, "evt_debug", "customer.subscription.updated");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var response = await client.GetFromJsonAsync<AdminBillingDebugResponse>("/admin/billing-debug");
+
+        Assert.NotNull(response);
+        Assert.Equal("Pro", response.Subscription.Plan);
+        Assert.Equal("Active", response.Subscription.Status);
+        Assert.Contains(response.WebhookEvents, item => item.StripeEventId == "evt_debug");
+    }
+
+    [Fact]
+    public async Task ResetDemo_CancelsSubscriptionsAndResetsLocalBillingState()
+    {
+        var fakeGateway = new FakeBillingGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        await SeedSubscriptionAsync(factory, auth.User.Id, PlanCode.Pro, SubscriptionStatus.Active);
+        await SeedBillingCustomerAsync(factory, auth.User.Id, "cus_reset");
+        await SeedWebhookEventAsync(factory, "evt_reset", "invoice.paid");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var response = await client.PostAsync("/admin/reset-demo", content: null);
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ResetDemoResponse>();
+        Assert.Equal(1, result?.CanceledSubscriptions);
+        Assert.Single(fakeGateway.CanceledSubscriptions);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlowDeskDbContext>();
+        var subscription = await dbContext.Subscriptions.SingleAsync(item => item.UserId == auth.User.Id);
+        Assert.Equal(PlanCode.Free, subscription.PlanCode);
+        Assert.Equal(SubscriptionStatus.None, subscription.Status);
+        Assert.Null(subscription.StripeSubscriptionId);
+        Assert.Equal(0, await dbContext.BillingCustomers.CountAsync());
+        Assert.Equal(0, await dbContext.StripeWebhookEvents.CountAsync());
+    }
+
     private static async Task<AuthResponse> RegisterAsync(HttpClient client)
     {
         var response = await client.PostAsJsonAsync(
@@ -212,7 +260,33 @@ public sealed class BillingEndpointTests
         await dbContext.SaveChangesAsync();
     }
 
+    private static async Task SeedWebhookEventAsync(
+        WebApplicationFactory<Program> factory,
+        string eventId,
+        string type)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlowDeskDbContext>();
+        var now = DateTimeOffset.UtcNow;
+
+        dbContext.StripeWebhookEvents.Add(new StripeWebhookEventRecord
+        {
+            Id = Guid.NewGuid(),
+            StripeEventId = eventId,
+            Type = type,
+            ReceivedAt = now,
+            ProcessedAt = now,
+        });
+
+        await dbContext.SaveChangesAsync();
+    }
+
     private static WebApplicationFactory<Program> CreateFactory()
+    {
+        return CreateFactory(new FakeBillingGateway());
+    }
+
+    private static WebApplicationFactory<Program> CreateFactory(FakeBillingGateway fakeGateway)
     {
         var databaseName = $"flowdesk-billing-tests-{Guid.NewGuid():N}";
 
@@ -224,7 +298,7 @@ public sealed class BillingEndpointTests
                     services.RemoveAll<DbContextOptions<FlowDeskDbContext>>();
                     services.RemoveAll<IDbContextOptionsConfiguration<FlowDeskDbContext>>();
                     services.RemoveAll<IBillingGateway>();
-                    services.AddSingleton<IBillingGateway, FakeBillingGateway>();
+                    services.AddSingleton<IBillingGateway>(fakeGateway);
                     services.AddDataProtection().UseEphemeralDataProtectionProvider();
                     services.AddDbContext<FlowDeskDbContext>(options =>
                     {
@@ -236,6 +310,8 @@ public sealed class BillingEndpointTests
 
     private sealed class FakeBillingGateway : IBillingGateway
     {
+        public List<string> CanceledSubscriptions { get; } = [];
+
         public Task<string> CreateCheckoutSessionAsync(
             string userId,
             string email,
@@ -260,6 +336,14 @@ public sealed class BillingEndpointTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult("https://billing.test/portal");
+        }
+
+        public Task CancelSubscriptionAsync(
+            string subscriptionId,
+            CancellationToken cancellationToken = default)
+        {
+            CanceledSubscriptions.Add(subscriptionId);
+            return Task.CompletedTask;
         }
     }
 }
