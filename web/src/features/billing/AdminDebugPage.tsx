@@ -46,7 +46,11 @@ export function AdminDebugPage({ token, onUnauthorized }: AdminDebugPageProps) {
         <div>
           <p className="text-sm font-medium text-primary">Admin</p>
           <h1 className="mt-2 text-3xl font-semibold">Billing debug</h1>
-          <p className="mt-3 max-w-2xl text-slate-600">TODO(claude): hosted-demo debug panel note.</p>
+          <p className="mt-3 max-w-2xl text-slate-600">
+            This panel surfaces billing plumbing that's normally invisible: the most recent Stripe webhook events the
+            app received and your current synced subscription state. The app treats Stripe as the source of truth and
+            reflects whatever these events report.
+          </p>
         </div>
         <Button variant="outline" disabled={reset.isPending} onClick={() => reset.mutate()}>
           {reset.isPending ? "Resetting" : "Reset demo"}

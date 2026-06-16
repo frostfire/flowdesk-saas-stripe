@@ -105,6 +105,34 @@ function Dashboard() {
       {token ? (
         <>
           <DunningBanner token={token} onUnauthorized={signOut} />
+          <section className="rounded-md border border-border bg-white p-5">
+            <h2 className="text-xl font-semibold">How this demo works</h2>
+            <p className="mt-3 text-sm text-slate-700">
+              FlowDesk is a working subscription-billing app running in Stripe test mode — nothing is ever charged.
+            </p>
+            <ul className="mt-4 grid gap-2 text-sm text-slate-700">
+              <li>
+                You start on the <strong>Free</strong> plan: view cases, read-only.
+              </li>
+              <li>
+                <strong>Upgrade to Pro</strong> from Pricing with a test card (
+                <code>4242 4242 4242 4242</code>, any future date and CVC). Checkout runs on Stripe; when you
+                return, Pro unlocks — create, edit, approve, and delete cases, plus analytics.
+              </li>
+              <li>
+                <strong>Manage billing</strong> opens Stripe's customer portal to change or cancel your plan.
+              </li>
+              <li>
+                <strong>Trigger a failed payment</strong> (decline card <code>4000 0000 0000 0341</code>, or a
+                failed renewal) to watch the account flip to past-due: a dunning banner appears and Pro features lock
+                again.
+              </li>
+            </ul>
+            <p className="mt-4 text-sm text-slate-700">
+              Plan changes flow back through signed Stripe webhooks, so the app always reflects Stripe. Case data is
+              per-visitor and in-memory, and resets periodically.
+            </p>
+          </section>
           <EntitlementSummary token={token} onUnauthorized={signOut} />
           <GatedActions token={token} onUnauthorized={signOut} />
           <CaseList token={token} onUnauthorized={signOut} />

@@ -124,7 +124,10 @@ export function PricingPage({ token, redirectTo = (url) => window.location.assig
       ) : null}
       <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <h2 className="font-semibold">Stripe test mode</h2>
-        <p className="mt-2">TODO(claude): hosted-demo test checkout note.</p>
+        <p className="mt-2">
+          No real charges — FlowDesk runs in Stripe test mode. Subscribe with a test card to unlock Pro instantly,
+          then trigger a failed payment with the decline card to watch the account drop to past-due.
+        </p>
         <dl className="mt-4 grid gap-2 sm:grid-cols-3">
           <div>
             <dt className="font-medium">Success</dt>
