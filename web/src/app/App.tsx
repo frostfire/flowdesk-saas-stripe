@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/features/auth/AuthForm";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
+import { CaseList } from "@/features/cases/CaseList";
 
 const queryClient = new QueryClient();
 
@@ -54,26 +55,18 @@ function Shell() {
 }
 
 function Dashboard() {
-  const { user } = useAuth();
+  const { signOut, token, user } = useAuth();
 
   return (
-    <section className="grid gap-6 md:grid-cols-[1fr_320px]">
+    <section className="grid gap-8">
       <div>
         <p className="text-sm font-medium text-primary">Case workspace</p>
         <h1 className="mt-2 text-3xl font-semibold">Welcome, {user?.email}</h1>
         <p className="mt-3 max-w-2xl text-slate-600">
-          The product shell is ready for auth, CaseFlow data, and billing gates.
+          Review the current CaseFlow queue before billing gates and case actions are added.
         </p>
       </div>
-      <div className="rounded-md border border-border bg-white p-5">
-        <h2 className="text-sm font-semibold">Next scaffold step</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Sign-up and sign-in routes will attach to the API once the auth task starts.
-        </p>
-        <Button className="mt-4" disabled>
-          Auth pending
-        </Button>
-      </div>
+      {token ? <CaseList token={token} onUnauthorized={signOut} /> : null}
     </section>
   );
 }
