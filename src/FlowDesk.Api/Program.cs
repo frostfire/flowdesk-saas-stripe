@@ -6,6 +6,7 @@ using FlowDesk.Api.Cases;
 using FlowDesk.Api.Webhooks;
 using FlowDesk.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,6 +56,18 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Behind a reverse proxy that terminates TLS (nginx), honor the forwarded scheme so
+// HTTPS redirection and link generation see the original https request. The API port is
+// bound to loopback and only reachable through the proxy, so the forwarded headers are
+// trusted from any source.
+var forwardedHeaderOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+forwardedHeaderOptions.KnownNetworks.Clear();
+forwardedHeaderOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaderOptions);
 
 if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 {
