@@ -55,21 +55,24 @@ public sealed class StripeWebhookService : IStripeWebhookService
 
         var existing = await _dbContext.StripeWebhookEvents
             .SingleOrDefaultAsync(item => item.StripeEventId == stripeEvent.Id, cancellationToken);
-        if (existing is not null)
+        if (existing?.ProcessedAt is not null)
         {
             return new StripeWebhookProcessResult(IsValid: true, IsDuplicate: true);
         }
 
         var receivedAt = DateTimeOffset.UtcNow;
-        var eventRecord = new StripeWebhookEventRecord
+        var eventRecord = existing ?? new StripeWebhookEventRecord
         {
             Id = Guid.NewGuid(),
             StripeEventId = stripeEvent.Id,
             Type = stripeEvent.Type,
             ReceivedAt = receivedAt,
         };
-        _dbContext.StripeWebhookEvents.Add(eventRecord);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (existing is null)
+        {
+            _dbContext.StripeWebhookEvents.Add(eventRecord);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         if (!RelevantEventTypes.Contains(stripeEvent.Type))
         {
@@ -91,6 +94,7 @@ public sealed class StripeWebhookService : IStripeWebhookService
             }
 
             eventRecord.ProcessedAt = DateTimeOffset.UtcNow;
+            eventRecord.ProcessingError = null;
             await _dbContext.SaveChangesAsync(cancellationToken);
             return new StripeWebhookProcessResult(IsValid: true, IsDuplicate: false);
         }

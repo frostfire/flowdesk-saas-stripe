@@ -64,6 +64,34 @@ public sealed class StripeWebhookEndpointTests
     }
 
     [Fact]
+    public async Task StripeWebhook_RetriesUnprocessedEvent()
+    {
+        var fakeGateway = new FakeBillingGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        fakeGateway.SetSnapshot("sub_retry", Snapshot(auth.User.Id, "sub_retry", SubscriptionStatus.Active));
+        fakeGateway.ThrowOnceForSubscription("sub_retry");
+        var payload = CreateSubscriptionEvent("evt_retry", "customer.subscription.updated", "sub_retry");
+
+        var first = await PostStripeEventAsync(client, payload);
+        var second = await PostStripeEventAsync(client, payload);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, first.StatusCode);
+        second.EnsureSuccessStatusCode();
+        Assert.Equal(2, fakeGateway.GetSubscriptionCallCount);
+        var entitlements = await GetEntitlementsAsync(client, auth);
+        Assert.Equal("Active", entitlements.Status);
+        Assert.True(entitlements.Entitlements.CanCreateCases);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlowDeskDbContext>();
+        var record = await dbContext.StripeWebhookEvents.SingleAsync(item => item.StripeEventId == "evt_retry");
+        Assert.NotNull(record.ProcessedAt);
+        Assert.Null(record.ProcessingError);
+    }
+
+    [Fact]
     public async Task StripeWebhook_ReconcilesAgainstCurrentSubscriptionState()
     {
         var fakeGateway = new FakeBillingGateway();
@@ -103,6 +131,28 @@ public sealed class StripeWebhookEndpointTests
         var entitlements = await GetEntitlementsAsync(client, auth);
         Assert.Equal("Active", entitlements.Status);
         Assert.True(entitlements.Entitlements.CanCreateCases);
+    }
+
+    [Fact]
+    public async Task StripeWebhook_PortalPlanChangeUpdatesFromGatewaySnapshot()
+    {
+        var fakeGateway = new FakeBillingGateway();
+        using var factory = CreateFactory(fakeGateway);
+        using var client = factory.CreateClient();
+        var auth = await RegisterAsync(client);
+        fakeGateway.SetSnapshot("sub_portal_change", Snapshot(auth.User.Id, "sub_portal_change", PlanCode.Pro));
+        var firstPayload = CreateSubscriptionEvent("evt_portal_pro", "customer.subscription.updated", "sub_portal_change");
+        var first = await PostStripeEventAsync(client, firstPayload);
+        first.EnsureSuccessStatusCode();
+
+        fakeGateway.SetSnapshot("sub_portal_change", Snapshot(auth.User.Id, "sub_portal_change", PlanCode.Team));
+        var secondPayload = CreateSubscriptionEvent("evt_portal_team", "customer.subscription.updated", "sub_portal_change");
+        var second = await PostStripeEventAsync(client, secondPayload);
+
+        second.EnsureSuccessStatusCode();
+        var entitlements = await GetEntitlementsAsync(client, auth);
+        Assert.Equal("Team", entitlements.Plan);
+        Assert.Equal(10, entitlements.Entitlements.MaxSeats);
     }
 
     private static WebApplicationFactory<Program> CreateFactory(FakeBillingGateway fakeGateway)
@@ -230,9 +280,26 @@ public sealed class StripeWebhookEndpointTests
             CancelAtPeriodEnd: false);
     }
 
+    private static BillingSubscriptionSnapshot Snapshot(
+        string userId,
+        string subscriptionId,
+        PlanCode plan)
+    {
+        return new BillingSubscriptionSnapshot(
+            userId,
+            "cus_test",
+            subscriptionId,
+            $"price_{plan.ToString().ToLowerInvariant()}",
+            plan,
+            SubscriptionStatus.Active,
+            DateTimeOffset.UtcNow.AddMonths(1),
+            CancelAtPeriodEnd: false);
+    }
+
     private sealed class FakeBillingGateway : IBillingGateway
     {
         private readonly Dictionary<string, BillingSubscriptionSnapshot> _snapshots = [];
+        private readonly HashSet<string> _throwOnceSubscriptions = [];
 
         public int GetSubscriptionCallCount { get; private set; }
 
@@ -247,17 +314,35 @@ public sealed class StripeWebhookEndpointTests
             return Task.FromResult("https://billing.test/checkout");
         }
 
+        public Task<string> CreatePortalSessionAsync(
+            string customerId,
+            string returnUrl,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult("https://billing.test/portal");
+        }
+
         public Task<BillingSubscriptionSnapshot?> GetSubscriptionAsync(
             string subscriptionId,
             CancellationToken cancellationToken = default)
         {
             GetSubscriptionCallCount++;
+            if (_throwOnceSubscriptions.Remove(subscriptionId))
+            {
+                throw new InvalidOperationException("Subscription lookup failed.");
+            }
+
             return Task.FromResult(_snapshots.GetValueOrDefault(subscriptionId));
         }
 
         public void SetSnapshot(string subscriptionId, BillingSubscriptionSnapshot snapshot)
         {
             _snapshots[subscriptionId] = snapshot;
+        }
+
+        public void ThrowOnceForSubscription(string subscriptionId)
+        {
+            _throwOnceSubscriptions.Add(subscriptionId);
         }
     }
 }
