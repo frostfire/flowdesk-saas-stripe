@@ -37,6 +37,16 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    options.AddPolicy("Spa", policy =>
+    {
+        policy.WithOrigins(origins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -51,6 +61,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseCors("Spa");
 app.UseAuthentication();
 app.UseAuthorization();
 
