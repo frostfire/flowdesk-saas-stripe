@@ -1,4 +1,6 @@
+using FlowDesk.Api.Analytics;
 using FlowDesk.Api.Auth;
+using FlowDesk.Api.Billing;
 using FlowDesk.Api.Cases;
 using FlowDesk.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -68,7 +70,9 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
+app.MapBillingEndpoints();
 app.MapCaseEndpoints();
+app.MapAnalyticsEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/health"));
 

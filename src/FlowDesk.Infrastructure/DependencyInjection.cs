@@ -1,4 +1,6 @@
 using FlowDesk.Application.CaseFlow;
+using FlowDesk.Application.Billing;
+using FlowDesk.Infrastructure.Billing;
 using FlowDesk.Infrastructure.CaseFlow;
 using FlowDesk.Infrastructure.Identity;
 using FlowDesk.Infrastructure.Persistence;
@@ -29,6 +31,16 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<FlowDeskDbContext>();
 
         services.AddCaseFlowClient(configuration);
+        services.AddScoped<ICurrentEntitlementService, CurrentEntitlementService>();
+        services.AddSingleton<IBillingGateway, StripeBillingGateway>();
+        services.Configure<BillingOptions>(options =>
+        {
+            configuration.GetSection("Billing").Bind(options);
+            options.StripeSecretKey = configuration["STRIPE_SECRET_KEY"] ?? options.StripeSecretKey;
+            options.StripePricePro = configuration["STRIPE_PRICE_PRO"] ?? options.StripePricePro;
+            options.StripePriceTeam = configuration["STRIPE_PRICE_TEAM"] ?? options.StripePriceTeam;
+            options.StripeWebhookSecret = configuration["STRIPE_WEBHOOK_SECRET"] ?? options.StripeWebhookSecret;
+        });
 
         return services;
     }
